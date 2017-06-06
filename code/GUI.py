@@ -1,3 +1,4 @@
+from time import sleep
 import tkinter as tk
 import random
 
@@ -37,7 +38,7 @@ class MainWindow(tk.Tk):
         frame.tkraise()
 
 class SearchPage(tk.Frame):
-    LARGE_FONT = ('Verdana', 23)
+    LARGE_FONT = ('Verdana', 21)
 
     def move_to_query_page(self, event, controller):
         self.search_entry.unbind('<Key>')
@@ -78,15 +79,63 @@ class SearchPage(tk.Frame):
         settings_label.grid(row=0, column=7)
 
 class QueryPage(tk.Frame):
+
     def __init__(self, parent, controller):
         tk.Frame.__init__(self, parent)
         self.configure(background='#FAFAFA')
-        label = tk.Label(self, text='Query Page')
-        label.pack(pady=10, padx=10)
-        
-        back_button = tk.Button(self, text='Back',
+        # top frame: back button, entry, search button
+        top_frame = tk.Frame(self, background='#FAFAFA')
+        top_frame.place(relx=.01, rely=.01)
+        back_button = tk.Button(top_frame, text='Back',
                                 command=lambda : controller.show_frame(SearchPage))
-        back_button.pack()
+        back_button.pack(side=tk.LEFT, padx=(0,10))
+        back_button.configure(background='#FAFAFA', height=2)
+
+        self.search_string = tk.StringVar()
+        self.search_entry = tk.Entry(top_frame, width=40, textvariable=self.search_string, font=SearchPage.LARGE_FONT)
+        self.search_entry.configure(highlightbackground='gray')
+        self.search_entry.pack(side=tk.LEFT)
+        search_button = tk.Button(top_frame, text='Search', command=None)
+        search_button.configure(background='#FAFAFA', height=2)
+        search_button.pack(side=tk.LEFT, padx=10)
+
+        # result label 
+        # invisible when there is no search yet 
+        result_label = tk.Label(self, background='#FAFAFA', width=85, anchor='w', font=('Verdana', 13))
+        result_label['text'] = 'About xxx results in xxx seconds'
+        result_label.place(x=10, y=55)
+
+        # create canvas with scrollbar
+        canvas = tk.Canvas(self, width=880, height=550, background='#FAFAFA')
+        canvas.place(x=10, y=90)
+        scrollbar = tk.Scrollbar(self, command=canvas.yview)
+        scrollbar.place(x=880, y=90, height=552)
+        canvas.configure(yscrollcommand=scrollbar.set)
+        frame = tk.Frame(canvas, background='#FAFAFA')
+        canvas.create_window((0,0), window=frame, anchor='nw')
+        def add_label(event):
+            for i in range(5):
+                label = tk.Label(frame, text='ASD', font=SearchPage.LARGE_FONT, background='#FAFAFA')
+                label.pack()
+            canvas.configure(scrollregion=canvas.bbox('all'))
+
+        canvas.bind('<Button-1>', add_label)
+        canvas.bind('<4>', lambda event: canvas.yview('scroll', -1, 'units'))
+        canvas.bind('<5>', lambda event: canvas.yview('scroll', 1, 'units'))
+
+        # change result page frame 
+        self.change_page_frame = tk.Frame(self, background='#FAFAFA', width=700, height=20)
+        self.change_page_frame.place(x=200, y=645)
+        prev_page_button = tk.Button(self.change_page_frame, text='Back')
+        prev_page_button.grid(row=0, column=0)
+        for i in range(1,11):
+            label = tk.Label(self.change_page_frame, text=str(i), anchor=tk.CENTER, width=1)
+            if i == 1:
+                label.configure(fg='red')
+            label.configure(background='#FAFAFA', cursor='fleur')
+            label.grid(row=0, column=i, padx=10)
+        next_page_button = tk.Button(self.change_page_frame, text='Next')
+        next_page_button.grid(row=0, column=11, padx=5)
 
 class ResultPage(tk.Frame):
     def __init__(self, parent, controller):
