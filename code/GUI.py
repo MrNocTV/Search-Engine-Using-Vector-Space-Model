@@ -175,55 +175,56 @@ class QueryPage(tk.Frame):
             move_to_page(self.current_page-1)
         prev_page_button.configure(command=move_back)
         
-        # changing list contents when clicking on page labels 
+        # changing list content when clicking on page labels 
         for i in range(1, len(labels)):
             labels[i].bind('<Button-1>', lambda event, page=i: move_to_page(page))
         
         # after displaying all docs on the list 
-        # we need to display contents of the doc
+        # we need to display content of the doc
         # when user click on doc's title
         def onselect(event=None):
             w = event.widget
             index = int(w.curselection()[0])
             if index % 4 == 0:
                 print("Move to doc {}".format(index//4))
+                controller.frames[ResultPage].title = str(w.get(index))
+                controller.frames[ResultPage].author = str(w.get(index+1))
+                controller.frames[ResultPage].content = str(w.get(index+2))
+                controller.show_frame(ResultPage)
 
         doc_list.bind('<<ListboxSelect>>', onselect)
 
 class ResultPage(tk.Frame):
     def __init__(self, parent, controller):
-        tk.Frame.__init__(self, parent)
-        label = tk.Label(self, text='Result Page')
-        label.pack(pady=10, padx=10)
-
+        tk.Frame.__init__(self, parent, background='#FAFAFA')
         back_button = tk.Button(self, text='Back',
-                                command=lambda : controller.show_frame(SearchPage))
-        back_button.pack()
-    
-    @property
-    def title(self):
-        return self.title 
-    
-    @title.setter
-    def title(self, value):
-        self.title = value 
-    
-    @property 
-    def author(self):
-        return self.author 
-    
-    @author.setter
-    def author(self, value):
-        self.author = value 
-    
-    @property
-    def content(self):
-        return self.content
-    
-    @content.setter
-    def content(self, value):
-        self.content = value
-    
+                                command=lambda : controller.show_frame(QueryPage))
+        back_button.place(x=10, y=10)
+        # title label 
+        self.title_label = tk.Label(self, font=('Verdana', 15, 'bold'), text='Trương Văn Lộc', fg='blue')
+        self.title_label.configure(background='#FAFAFA')
+        self.title_label.place(x=70, y=10)
+
+        # content frame 
+        frame = tk.Frame(self, background='red')
+        frame.place(x=10,y=55)
+        self.content_text = tk.Text(frame, font=('Verdana', 12), wrap=tk.WORD, width=86, height=30)
+        scrollbar = tk.Scrollbar(frame, width=10)
+        self.content_text.configure(yscrollcommand=scrollbar.set)
+        scrollbar.configure(command=self.content_text.yview)
+        scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
+        self.content_text.pack()
+
+        # information about result 
+        self.word_match_label = tk.Label(self, text='word(s) match: ', background='#FAFAFA')
+        self.word_match_label.place(x=10, y=650)
+        self.score_label = tk.Label(self, text='score: ', background='#FAFAFA')
+        self.score_label.place(x=200, y=650)
+
+        self.title = ''
+        self.author = ''
+        self.content = ''
+
 if __name__ == '__main__':
     app = MainWindow()
     app.mainloop()
