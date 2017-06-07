@@ -1,48 +1,44 @@
 import tkinter as tk
 
 
-def on_configure(event):
-    # update scrollregion after starting 'mainloop'
-    # when all widgets are in canvas
-    canvas.configure(scrollregion=canvas.bbox('all'))
+# def demo(master):
+#     listbox = tk.Listbox(master)
+#     listbox.pack(expand=1, fill="both")
 
+#     # inserting some items
+#     listbox.insert("end", "A list item")
 
-root = tk.Tk()
-root.resizable(False, False)
+#     for item in ["one", "two", "three", "four"]:
+#         listbox.insert("end", item)
 
-# --- create canvas with scrollbar ---
+#     # this changes the background colour of the 2nd item
+#     listbox.itemconfig(1, {'bg':'red'})
 
-canvas = tk.Canvas(root)
-canvas.pack(side=tk.LEFT)
+#     # this changes the font color of the 4th item
+#     listbox.itemconfig(3, {'fg': 'blue'})
 
-scrollbar = tk.Scrollbar(root, command=canvas.yview)
-scrollbar.pack(side=tk.LEFT, fill='y')
+#     # another way to pass the colour
+#     listbox.itemconfig(2, bg='green')
+#     listbox.itemconfig(0, foreground="purple")
 
-canvas.configure(yscrollcommand = scrollbar.set)
+# if __name__ == "__main__":
+#     root = tk.Tk()
+#     demo(root)
+#     root.mainloop()
 
-# update scrollregion after starting 'mainloop'
-# when all widgets are in canvas
-canvas.bind('<Configure>', on_configure)
+from tkinter import *
 
-# --- put frame in canvas ---
+def onclick():
+   pass
 
-frame = tk.Frame(canvas)
-canvas.create_window((0,0), window=frame, anchor='nw')
+root = Tk()
+text = Text(root)
+text.insert(INSERT, "Hello.....")
+text.insert(END, "Bye Bye.....")
+text.pack()
 
-# --- add widgets in frame ---
-
-l = tk.Label(frame, text="Hello", font="-size 50")
-l.pack()
-
-l = tk.Label(frame, text="World", font="-size 50")
-l.pack()
-
-l = tk.Label(frame, text="Test text 1\nTest text 2\nTest text 3\nTest text 4\nTest text 5\nTest text 6\nTest text 7\nTest text 8\nTest text 9", font="-size 20")
-l.pack()
-
-f = tk.Frame(frame, height=100, width=300, background='red')
-f.pack(fill=tk.BOTH)
-
-# --- start program ---
-
+text.tag_add("here", "1.0", "1.4")
+text.tag_add("start", "1.8", "1.13")
+text.tag_config("here", background="yellow", foreground="blue")
+text.tag_config("start", background="black", foreground="green")
 root.mainloop()
