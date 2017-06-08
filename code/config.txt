@@ -1,0 +1,6 @@
+{
+    'host':'localhost',
+    'user':'root',
+    'passwd':'02390128',
+    'db':'IR'
+}
