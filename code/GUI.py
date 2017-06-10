@@ -1,8 +1,35 @@
 # -*- coding: utf-8 -*-
 
 from time import sleep
+from VSM import connect_server, querying_and_ranking
 import tkinter as tk
 import random
+import time 
+
+db = connect_server()
+cur = db.cursor()
+
+def get_title_of_doc(doc):
+    cur.execute('SELECT content from doc where title=%s', [doc])
+    link_content = cur.fetchall()[0][0]
+    title = open(link_content, encoding='utf16').readlines()[0].strip()
+    return title
+
+def get_link_of_doc(doc):
+    cur.execute('SELECT content from doc where title=%s', [doc])
+    link_content = cur.fetchall()[0][0]
+    return link_content
+
+def get_first_content_line(doc):
+    cur.execute('SELECT content from doc where title=%s', [doc])
+    link_content = cur.fetchall()[0][0]
+    first_content_line = open(link_content, encoding='utf16').readlines()[2].strip()
+    return first_content_line
+
+def get_doc_content(doc):
+    cur.execute('SELECT content from doc where title=%s', [doc])
+    link_content = cur.fetchall()[0][0]
+    return open(link_content, encoding='utf16').read().strip()
 
 class MainWindow(tk.Tk):
     def __init__(self, *args, **kwargs):
@@ -44,6 +71,7 @@ class SearchPage(tk.Frame):
 
     def move_to_query_page(self, event, controller):
         self.search_entry.unbind('<Key>')
+        controller.frames[QueryPage].reset()
         controller.show_frame(QueryPage)
 
     def bind_again(self, controller, event=None):
@@ -103,9 +131,9 @@ class QueryPage(tk.Frame):
 
         # result label 
         # invisible when there is no search yet 
-        result_label = tk.Label(self, background='#FAFAFA', width=85, anchor='w', font=('Verdana', 13))
-        result_label['text'] = 'About xxx results in xxx seconds'
-        result_label.place(x=10, y=55)
+        self.result_label = tk.Label(self, background='#FAFAFA', width=85, anchor='w', font=('Verdana', 13))
+        self.result_label['text'] = ''
+        self.result_label.place(x=10, y=55)
 
         # doc list result
         frame = tk.Frame(self,  background='#FAFAFA', bd=20)
@@ -113,11 +141,11 @@ class QueryPage(tk.Frame):
         scrollbar = tk.Scrollbar(frame)
         scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
 
-        doc_list = tk.Listbox(frame, width=66, height=21, font=('Verdana', 15))
-        doc_list.pack()
+        self.doc_list = tk.Listbox(frame, width=66, height=21, font=('Verdana', 15))
+        self.doc_list.pack()
 
-        doc_list.config(yscrollcommand=scrollbar.set)
-        scrollbar.config(command=doc_list.yview)
+        self.doc_list.config(yscrollcommand=scrollbar.set)
+        scrollbar.config(command=self.doc_list.yview)
 
         # change/switch result page frame 
         change_page_frame = tk.Frame(self, background='#FAFAFA', width=700, height=20)
@@ -148,20 +176,23 @@ class QueryPage(tk.Frame):
             elif page_num > 10:
                 page_num = 10
             self.current_page = page_num
-            doc_list.delete(0, tk.END)
-            count = 0
-            for i in range(100):
-                if (i+1) % 4 == 0:
-                    doc_list.insert(tk.END, '')
-                else:
-                    doc_list.insert(tk.END, random.randint(1, 100))
-            for i in range(100):
-                if count == 0:
-                    doc_list.itemconfig(i, fg='blue')
-                if count == 1:
-                    doc_list.itemconfig(i, fg='brown')
-                count = (count+1) % 4
+            self.doc_list.delete(0, tk.END)
             
+            # add doc to list 
+            for i in range((self.current_page-1)*10, (self.current_page-1)*10 + 10):
+                if i >= len(self.results):
+                    break
+                self.doc_list.insert(tk.END, self.results[i][0] + " - " + get_title_of_doc(self.results[i][0]))
+                self.doc_list.insert(tk.END, 'Link: ' + get_link_of_doc(self.results[i][0]))
+                self.doc_list.insert(tk.END, get_first_content_line(self.results[i][0]))
+                self.doc_list.insert(tk.END, '')
+            
+            # change font color to make it more readable 
+            for i in range(40):
+                if i % 4 == 0:
+                    self.doc_list.itemconfig(i, fg="blue")
+            # mark current page label to red 
+            # and the orthers to black
             for i in range(1, len(labels)):
                 labels[i].config(fg='black')
             labels[page_num].config(fg='red')
@@ -187,12 +218,36 @@ class QueryPage(tk.Frame):
             index = int(w.curselection()[0])
             if index % 4 == 0:
                 print("Move to doc {}".format(index//4))
-                controller.frames[ResultPage].title = str(w.get(index))
+                real_index = ((self.current_page-1)*10 + index//4) 
+                controller.frames[ResultPage].set_title(get_title_of_doc(self.results[real_index][0]))
                 controller.frames[ResultPage].author = str(w.get(index+1))
-                controller.frames[ResultPage].content = str(w.get(index+2))
+                controller.frames[ResultPage].set_content(get_doc_content(self.results[real_index][0]))
                 controller.show_frame(ResultPage)
 
-        doc_list.bind('<<ListboxSelect>>', onselect)
+        self.doc_list.bind('<<ListboxSelect>>', onselect)
+
+        def querying(event=None):
+            start = time.time()
+            print(self.search_string.get())
+            query = self.search_string.get()
+            # get results as a list of doc 
+            self.results = querying_and_ranking(query, cur)
+            # calculate time taken 
+            timestamp = time.time() - start 
+            self.result_label['text'] = 'About {} results in {} seconds'.format(len(self.results), timestamp)
+            # remove all results from the last query
+            self.doc_list.delete(0, tk.END)
+            # move to first page 
+            move_to_page(1)
+
+        self.search_entry.bind('<Return>', querying)
+    
+    def reset(self):
+        self.search_string.set('')
+        self.current_page = 1
+        self.doc_list.delete(0, tk.END)
+        self.result_label['text'] = ''     
+        self.results = []   
 
 class ResultPage(tk.Frame):
     def __init__(self, parent, controller):
@@ -208,6 +263,7 @@ class ResultPage(tk.Frame):
         # content frame 
         frame = tk.Frame(self, background='red')
         frame.place(x=10,y=55)
+        self.content_string = tk.StringVar()
         self.content_text = tk.Text(frame, font=('Verdana', 12), wrap=tk.WORD, width=86, height=30)
         scrollbar = tk.Scrollbar(frame, width=10)
         self.content_text.configure(yscrollcommand=scrollbar.set)
@@ -221,9 +277,12 @@ class ResultPage(tk.Frame):
         self.score_label = tk.Label(self, text='score: ', background='#FAFAFA')
         self.score_label.place(x=200, y=650)
 
-        self.title = ''
-        self.author = ''
-        self.content = ''
+    def set_title(self, val):
+        self.title_label['text'] = val 
+    
+    def set_content(self, val):
+        self.content_text.delete(1.0, tk.END)
+        self.content_text.insert(1.0, val)
 
 if __name__ == '__main__':
     app = MainWindow()

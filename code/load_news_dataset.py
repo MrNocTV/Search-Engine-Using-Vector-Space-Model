@@ -15,11 +15,11 @@ def copy_file(src, dst, N):
         src_file = os.path.join(src, filename)
         dst_file = os.path.join(dst, 'd' + str(count) + '.txt')
         count += 1
-        src_file = open(src_file, encoding='utf-16')
-        dst_file = open(dst_file, 'w')
+        src_file = open(src_file, encoding='utf16')
+        dst_file = open(dst_file, 'w', encoding='utf16')
         for line in src_file:
             dst_file.write(line.strip() + '\n')
         src_file.close()
         dst_file.close()
 
-copy_file(src_folder, dst_folder, 10)
+copy_file(src_folder, dst_folder, 1000)

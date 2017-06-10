@@ -4,16 +4,16 @@ import string
 import math
 from collections import Counter
 
-string.punctuation += '”“'
+string.punctuation += '”“…'
 def tokenize(data):
     data = [x.strip() for x in data.split()]
     words = []
     for token in data:
-        if token[0] in string.punctuation:
+        while len(token) > 0 and token[0] in string.punctuation:
             token = token[1:]
         while len(token) > 0 and token[-1] in string.punctuation:
             token = token[:-1]
-        if len(token) > 0:
+        if len(token) > 1:
             # some words are special 
             # like dacam/dioxin 
             # the solution here is to split them into two words 
@@ -36,7 +36,7 @@ def remove_too_long_stop_words():
     stop_words = set()
     # first get all stop word 
     # remove if they can split into two words 
-    with open('/home/loctv/Documents/Python/IR-Remake/stop_word/stop_words.txt') as f:
+    with open('/home/loctv/Documents/Python/IR-Remake/stop_word/stop_words.txt', encoding='utf-8') as f:
         for line in f:
             if len(line.split()) == 1:
                 stop_words.add(line.strip())
@@ -48,7 +48,7 @@ def remove_too_long_stop_words():
 
 def remove_stop_words(data):
     result = []
-    stop_words = set(word.strip() for word in open('/home/loctv/Documents/Python/IR-Remake/stop_word/stop_words.txt').readlines())
+    stop_words = set(word.strip() for word in open('/home/loctv/Documents/Python/IR-Remake/stop_word/stop_words.txt', encoding='utf-8').readlines())
     for word in data:
         if word not in stop_words:
             yield word 
@@ -58,12 +58,9 @@ def term_frequency(doc):
     freq = Counter(doc)
     return dict(freq)
 
-def inverse_document_frequency(total_doc, doc_contain_word):
-    return 1 + math.log(total_doc / doc_contain_word)
-
 if __name__ == '__main__':
-    # data = tokenize(open('/home/loctv/Documents/Python/IR-Remake/news/TTO_050812_0637.txt').read())
-    # for word in remove_stop_words(data):
-    #     print(word)
-    print(term_frequency(open('/home/loctv/Documents/Python/IR-Remake/testing_data/doc3.txt').read().split()))
-    print('IDF(game) = {}'.format(inverse_document_frequency(3, 1)))
+    # data = tokenize(open('/home/loctv/Documents/Python/IR-Remake/news/d0.txt', encoding='utf16').read())
+    data = tokenize('khá/giỏi')
+    print(data)
+    # print(term_frequency(open('/home/loctv/Documents/Python/IR-Remake/testing_data/doc3.txt').read().split()))
+    # print('IDF(game) = {}'.format(inverse_document_frequency(3, 1)))
