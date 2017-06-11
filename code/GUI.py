@@ -2,9 +2,11 @@
 
 from time import sleep
 from VSM import connect_server, querying_and_ranking
+from itertools import combinations
 import tkinter as tk
 import random
 import time 
+import string
 
 db = connect_server()
 cur = db.cursor()
@@ -191,8 +193,7 @@ class QueryPage(tk.Frame):
             for i in range(40):
                 if i % 4 == 0:
                     self.doc_list.itemconfig(i, fg="blue")
-            # mark current page label to red 
-            # and the orthers to black
+            # change label color of other pages to black and this page to red 
             for i in range(1, len(labels)):
                 labels[i].config(fg='black')
             labels[page_num].config(fg='red')
@@ -221,7 +222,10 @@ class QueryPage(tk.Frame):
                 real_index = ((self.current_page-1)*10 + index//4) 
                 controller.frames[ResultPage].set_title(get_title_of_doc(self.results[real_index][0]))
                 controller.frames[ResultPage].author = str(w.get(index+1))
-                controller.frames[ResultPage].set_content(get_doc_content(self.results[real_index][0]))
+                controller.frames[ResultPage].set_content(get_doc_content(self.results[real_index][0]), self.query)
+                controller.frames[ResultPage].set_query(self.query)
+                controller.frames[ResultPage].set_score(self.results[real_index][1])
+                controller.frames[ResultPage].set_word_match(self.results[real_index][2])
                 controller.show_frame(ResultPage)
 
         self.doc_list.bind('<<ListboxSelect>>', onselect)
@@ -231,7 +235,9 @@ class QueryPage(tk.Frame):
             print(self.search_string.get())
             query = self.search_string.get()
             # get results as a list of doc 
-            self.results = querying_and_ranking(query, cur)
+            self.results, self.query = querying_and_ranking(query, cur)
+            if self.results is None:
+                return
             # calculate time taken 
             timestamp = time.time() - start 
             self.result_label['text'] = 'About {} results in {} seconds'.format(len(self.results), timestamp)
@@ -254,6 +260,7 @@ class ResultPage(tk.Frame):
         tk.Frame.__init__(self, parent, background='#FAFAFA')
         back_button = tk.Button(self, text='Back',
                                 command=lambda : controller.show_frame(QueryPage))
+        back_button.config(bg='#FAFAFA')
         back_button.place(x=10, y=10)
         # title label 
         self.title_label = tk.Label(self, font=('Verdana', 15, 'bold'), text='Trương Văn Lộc', fg='blue')
@@ -263,7 +270,7 @@ class ResultPage(tk.Frame):
         # content frame 
         frame = tk.Frame(self, background='red')
         frame.place(x=10,y=55)
-        self.content_string = tk.StringVar()
+        self.content_string = ''
         self.content_text = tk.Text(frame, font=('Verdana', 12), wrap=tk.WORD, width=86, height=30)
         scrollbar = tk.Scrollbar(frame, width=10)
         self.content_text.configure(yscrollcommand=scrollbar.set)
@@ -280,9 +287,37 @@ class ResultPage(tk.Frame):
     def set_title(self, val):
         self.title_label['text'] = val 
     
-    def set_content(self, val):
+    def set_content(self, val, query):
         self.content_text.delete(1.0, tk.END)
         self.content_text.insert(1.0, val)
+        self.content_string = val 
+        self.content_text.tag_remove('match', '1.0', tk.END)
+        punctuation = string.punctuation + '”“… '
+        pairs = list(combinations(punctuation, 2)) + [(' ', ' ')]
+        punctuation = punctuation[::-1]
+        pairs += list(combinations(punctuation, 2))
+        for word in query:
+            for x1, x2 in pairs:
+                temp = x1 + word + x2
+                start_pos = '1.0'
+                while True:
+                    start_pos = self.content_text.search(temp, start_pos, nocase=True, stopindex=tk.END)
+                    if not start_pos:
+                        break
+                    end_pos = '{}+{}c'.format(start_pos, len(temp))
+                    self.content_text.tag_add('match', start_pos, end_pos)
+                    start_pos = end_pos
+            self.content_text.tag_config('match', foreground='red', background='yellow')
+            
+    
+    def set_query(self, val):
+        self.query = val
+    
+    def set_word_match(self, val):
+        self.word_match_label['text'] = 'word(s) match: {}'.format(val)
+    
+    def set_score(self, val):
+        self.score_label['text'] = 'score: {}'.format(val)
 
 if __name__ == '__main__':
     app = MainWindow()

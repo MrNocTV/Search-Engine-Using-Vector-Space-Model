@@ -22,4 +22,4 @@ def copy_file(src, dst, N):
         src_file.close()
         dst_file.close()
 
-copy_file(src_folder, dst_folder, 1000)
+copy_file(src_folder, dst_folder, 43000)
